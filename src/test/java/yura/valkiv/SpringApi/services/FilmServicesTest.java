@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.annotation.Cacheable;
 import yura.valkiv.SpringApi.models.Film;
 import yura.valkiv.SpringApi.models.FilmRating;
 import yura.valkiv.SpringApi.models.Tag;
@@ -14,12 +15,15 @@ import yura.valkiv.SpringApi.repositories.FilmRepository;
 import yura.valkiv.SpringApi.repositories.RatingRepository;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 public class FilmServicesTest {
 
-    List<Film> films = getEmuDataBase();
+    List<Film> films = getEmuDataBase(); // ініціалізує список з 2 фільмами
     @Mock
     private FilmRepository filmRepository;
     @Mock
@@ -27,60 +31,103 @@ public class FilmServicesTest {
     @InjectMocks
     private FilmServices filmServices;
 
-    //test 1/7
     @Test
     public void getAllFilmsListTest() {
+
         Mockito.when(filmRepository.findAll()).thenReturn(films);
         List<Film> result = filmServices.getAllFilmsList();
         Assertions.assertNotNull(result);
-        Assertions.assertEquals(films, result);
-        Assertions.assertEquals(2, result.size());
+        assertEquals(films, result);
+        assertEquals(2, result.size());
     }
+
+    @Test
+    public void testFindFilmsByTags() {
+
+        List<Film> expectedFilms = Arrays.asList(new Film(), new Film(), new Film());
+        String tags = "tag1,tag2,tag3";
+        Mockito.when(filmRepository.findDistinctByTagsNameIn(Mockito.anyList())).thenReturn(expectedFilms);
+        List<Film> actualFilms = filmServices.findFilmsByTags(tags);
+        assertEquals(expectedFilms, actualFilms);
+        Mockito.verify(filmRepository).findDistinctByTagsNameIn(Arrays.asList("tag1", "tag2", "tag3"));
+    }
+
     @Test
     public void getFilmById() {
+
         int id = 2;
         Mockito.when(filmRepository.findById(id)).thenReturn(films.get(id-1));
         Film filmRes = filmServices.getFilmById(id);
         Assertions.assertNotNull(filmRes);
-        Assertions.assertEquals(filmRes.getId(), id);
+        assertEquals(filmRes.getId(), id);
     }
-    @Test
-    public void testFindFilmsByTags() {
-        List<Tag> tagsTest = new ArrayList<>();
-        List<String> tagsNameList = new ArrayList<>();
-        tagsNameList.add("horror");
-        tagsTest.add(new Tag(2, "horror"));
-        Mockito.when(filmRepository.findDistinctByTagsNameIn(tagsNameList)).thenReturn(films.stream().filter(film -> tagsNameList.equals(film.getTags())).toList());
-        List<Film> tagsFoundFilms = filmServices.findFilmsByTags("horror");
-
-    }
-    @Test
-    public void math() {
-
-    }
-
-
 
     @Test
     public void deleteFilmByIdTest() {
+
         Mockito.doNothing().when(filmRepository).deleteById(1);
         String result = filmServices.deleteFilmById(1);
-        Assertions.assertEquals("Видалення успішне", result);
+        assertEquals("Видалення успішне", result);
     }
 
+    @Test
+    public void updateFilmTest() {
 
+        List<Film> emuDataBase = getEmuDataBase();
+        Mockito.when(filmRepository.findById(1)).thenReturn(emuDataBase.get(0));
+        Mockito.when(filmRepository.save(Mockito.any(Film.class))).thenReturn(emuDataBase.get(0));
+        Film filmNewData = new Film();
+        filmNewData.setName("updatedName");
+        filmNewData.setReleaseDate(2023);
+        filmNewData.setDescription("updatedDescription");
+        filmNewData.setVideoFile("updatedVideo.mp3");
+        filmNewData.setTags(List.of(new Tag(1, "updatedTag")));
+        Film updatedFilm = filmServices.updateFilm(1, filmNewData);
+        assertEquals("updatedName", updatedFilm.getName());
+    }
 
+    @Test
+    public void addRatingToFilmTest() {
 
+        FilmRating filmRating = new FilmRating();
+        filmRating.setId(1);
+        filmRating.setFilm(films.get(0));
+        filmRating.setRating(5);
 
+        Mockito.when(filmRepository.findById(1)).thenReturn(films.get(0));
+        Mockito.when(ratingRepository.findAllByFilm_Id(1)).thenReturn(List.of(filmRating));
 
+        String result = filmServices.addRatingToFilm(1, 4);
 
+        Mockito.verify(filmRepository).findById(1);
+        Mockito.verify(ratingRepository).save(new FilmRating(films.get(0), 4));
+        Mockito.verify(filmRepository).save(films.get(0));
 
+        assertEquals("Оцінка поставлена", result);
 
+    }
 
+    @Test
+    public void addFilmTest() {
+        Film film = new Film();
+        film.setId(1);
+        film.setName("test1");
+        film.setFilmRatingList(List.of(new FilmRating(1, film, 5)));
+        film.setTags(List.of(new Tag(1, "horror")));
+        film.setDescription("description test");
+        film.setRating(5);
+        film.setVideoFile("video.mp3");
+        film.setReleaseDate(2014);
+        Film savedFilm = filmServices.addFilm(film);
 
-    //МЕТОД ДЛЯ ЕМУЛЯЦІЇ БАЗИ ДАНИХ
+        Mockito.when(filmRepository.save(film)).thenReturn(film);
+        Assertions.assertNotNull(filmRepository.save(film));
+        Assertions.assertEquals(film, filmRepository.save(film));
+    }
+
+    //Приватні методи тільки для тестування
+    // Метод що емулює базу даних
     private List<Film> getEmuDataBase() {
-        // Створюємо замокований список
         List<Film> films = new ArrayList<>();
         Film film1 = new Film();
         film1.setId(1);
@@ -105,13 +152,4 @@ public class FilmServicesTest {
         films.add(film2);
         return films;
     }
-    //Емулятор айді
-    private Film getById(int id) {
-        for (Film film : films) {
-            if (film.getId() == id)
-                return film;
-        }
-        return null;
-    }
-
 }

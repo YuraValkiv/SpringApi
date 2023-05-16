@@ -69,7 +69,7 @@ public class FilmServices {
         film.setReleaseDate(filmNewData.getReleaseDate());
         film.setDescription(filmNewData.getDescription());
         film.setVideoFile(filmNewData.getVideoFile());
-        film.setTags(filmNewData.getTags()); // сет всіх полів
+        film.setTags(filmNewData.getTags()); // сетаєм всі поля
         return filmRepository.save(film);
     }
 
