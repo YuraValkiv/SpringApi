@@ -23,6 +23,7 @@ public class FilmServices {
     @Cacheable("film")
     public Film addFilm(Film film) {
         film.setRating(0); // сетаєм 0 рейтинг бо фільм тільки добавили і сейвим його в базу
+        film.setFilmRatingList(null);
         return filmRepository.save(film);
     }
 
@@ -44,12 +45,12 @@ public class FilmServices {
 
     //READ
 
-    @Cacheable("films")
+
     public List<Film> getAllFilmsList() {
         return filmRepository.findAll();//Передаєм список всіх фільмів із бази даних
     }
 
-    @Cacheable("film")
+
     public Film getFilmById( int id) {
         return filmRepository.findById(id);//Пошук фільма по айді
     }

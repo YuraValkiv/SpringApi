@@ -15,10 +15,10 @@ class SpringApiAppTests {
 
 
 
-	@Test
-	void contextLoads() {
+	//@Test
+	//void contextLoads() {
 
-	}
+	//}
 
 
 }

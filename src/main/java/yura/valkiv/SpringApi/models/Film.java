@@ -1,5 +1,7 @@
 package yura.valkiv.SpringApi.models;
 
+import org.hibernate.annotations.Cascade;
+
 import javax.persistence.*;
 import java.util.List;
 import java.util.Objects;
@@ -28,8 +30,8 @@ public class Film {
     @ManyToMany(cascade = { CascadeType.ALL })
     @JoinTable(
             name = "films_tags",
-            joinColumns = { @JoinColumn(name = "film_id") },
-            inverseJoinColumns = { @JoinColumn(name = "tag_id") }
+            joinColumns = { @JoinColumn(name = "film_id", referencedColumnName = "id") },
+            inverseJoinColumns = { @JoinColumn(name = "tag_id", referencedColumnName = "id") }
     )
     private List<Tag> tags;
 
